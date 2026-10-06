@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+
+- Full test coverage for previously-gapped modules (closes #6):
+  - `tests/test_browser_session.py` — mocks `BuiltIn().get_library_instance('Browser')` to unit test lifecycle keywords without a live Playwright session.
+  - `tests/test_allure_helpers.py` — same pattern for `AllureLibrary`.
+  - `tests/test_cloudlogs_azure.py`, `tests/test_cloudlogs_gcp.py` — mock the Azure/GCP SDK clients, following the existing `test_cloudlogs_aws.py` pattern.
+  - `tests/test_vendor_sync.py` — pins down the current placeholder CLI's help/error UX as a baseline for the future real implementation (#10).
+  - Additional `cloudlogs/aws.py` edge-case tests (statistics logging, expired-token retry during polling, non-expired-token error path, timeout-exhausted fallback).
+  - Overall coverage: 65% → 95%.
+- Security/governance infrastructure (closes #2, #3, #5, #8):
+  - `.gitleaks.toml` + `.github/workflows/secret-scan.yml` — CI secret scanning (gitleaks) on every push/PR with full git history.
+  - `.github/dependabot.yml` — weekly pip + github-actions dependency update PRs.
+  - `.github/workflows/codeql.yml` — weekly + push/PR CodeQL analysis for Python.
+  - `.github/workflows/dependency-audit.yml` — pip-audit against the fully-resolved lockfile (all extras).
+  - `.github/CODEOWNERS` — required review on security-critical paths.
+  - `CODE_OF_CONDUCT.md` — adapted from `GSA-TTS/agentic-coding-patterns`.
+  - Branch protection on `main`: required status checks (pytest, robocop, robotcode-analyze, gitleaks, pip-audit, CodeQL), 1 required approving + CODEOWNERS review, no force-push/deletion.
+
+### Changed
+
+- README/CONTRIBUTING/SECURITY updated to reflect public (not internal-bootstrap) status.
+
 ## [0.1.0] - 2026-10-06
 
 ### Added
