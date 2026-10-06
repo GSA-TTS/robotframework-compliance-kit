@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v7
       - name: Install dependencies
         run: uv sync --extra dev
       - name: Run pytest with coverage
@@ -25,7 +25,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v7
       - name: Install dependencies
         run: uv sync --extra dev
       - name: Run robocop
@@ -36,7 +36,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v7
       - name: Install dependencies
         run: uv sync --extra dev --extra browser --extra allure
       - name: Run robotcode analyze

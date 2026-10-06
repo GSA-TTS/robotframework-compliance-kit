@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v7
       - name: Install dependencies (all extras, so lockfile-resolved transitive deps are audited too)
         run: uv sync --extra dev --extra browser --extra allure --extra cloudgov --extra cloudlogs-aws --extra cloudlogs-azure --extra cloudlogs-gcp
       - name: Run pip-audit
