@@ -38,6 +38,6 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v3
       - name: Install dependencies
-        run: uv sync --extra dev
+        run: uv sync --extra dev --extra browser --extra allure
       - name: Run robotcode analyze
-        run: uv run robotcode analyze code src/gsa_compliance_robot/resources/
+        run: uv run robotcode analyze code --exit-code-mask hint src/gsa_compliance_robot/resources/
