@@ -1,0 +1,65 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "gsa-compliance-robot"
+version = "0.1.0"
+description = "Reusable Robot Framework automations and audit-evidence helpers for GSA security assessments and RPA tasks"
+readme = "README.md"
+license = { text = "CC0-1.0" }
+requires-python = ">=3.10"
+authors = [
+    { name = "GSA-TTS" },
+]
+classifiers = [
+    "License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication",
+    "Programming Language :: Python :: 3",
+    "Framework :: Robot Framework",
+    "Framework :: Robot Framework :: Library",
+]
+dependencies = [
+    "robotframework>=7.0,<8",
+    "robotframework-requests",
+]
+
+[project.optional-dependencies]
+browser = [
+    "robotframework-browser>=19.7.2,<21",
+]
+cloudgov = [
+    "requests",
+]
+cloudlogs-aws = [
+    "boto3",
+]
+cloudlogs-azure = [
+    "azure-monitor-query>=2.0.0",
+    "azure-identity>=1.25.0",
+]
+cloudlogs-gcp = [
+    "google-cloud-logging>=3.12.1",
+]
+allure = [
+    "allure-robotframework>=2.13.5",
+    "allure-python-commons>=2.13.5",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov",
+    "robotframework-robocop>=8.2,<10",
+    "robotcode[analyze]==2.7.0",
+    "boto3",
+]
+
+[project.scripts]
+gsa-robot-vendor = "gsa_compliance_robot.vendor_sync:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/gsa_compliance_robot"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/gsa_compliance_robot/resources" = "gsa_compliance_robot/resources"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,30 @@
+# Shared Robocop baseline for GSA compliance Robot Framework suites.
+#
+# This is the intersection of the ignore lists independently converged on by
+# M-26-14 and gsa-pages before this package existed — see the migration plan
+# issue for details. Consumer repos should `extend` this file and add only
+# their own repo-specific excludes/ignores on top.
+
+include = ["*.robot", "*.resource"]
+language = ["en"]
+
+[lint]
+ignore = [
+	"LEN01",  # too-long-keyword
+	"LEN03",  # too-many-calls-in-keyword
+	"LEN04",  # Test case names too long (>20 chars)
+	"LEN05",  # too-few-calls-in-test-case
+	"LEN06",  # Too many keywords in test case (>10)
+	"LEN07",  # too-many-arguments
+	"LEN08",  # Lines too long (>120 chars)
+	"LEN27",  # too-many-test-cases
+	"LEN28",  # file-too-long
+	"VAR05",  # Variable defined with suite scope (acceptable for suite variables)
+	"DOC03",  # Missing keyword documentation (acceptable for simple keywords)
+	"DEPR05", # Deprecated syntax (acceptable for legacy reasons)
+	"DEPR06", # Deprecated syntax (acceptable for legacy reasons)
+	"IMP01",  # Library import order — AS aliases + mixed-source imports look "wrong" to this rule
+]
+
+[format]
+line_length = 120

@@ -1,0 +1,43 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+      - name: Install dependencies
+        run: uv sync --extra dev
+      - name: Run pytest with coverage
+        run: uv run pytest --cov=gsa_compliance_robot --cov-report=term-missing --cov-report=xml
+
+  robocop:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+      - name: Install dependencies
+        run: uv sync --extra dev
+      - name: Run robocop
+        run: uv run robocop check --config robocop.toml src/
+
+  robotcode-analyze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+      - name: Install dependencies
+        run: uv sync --extra dev
+      - name: Run robotcode analyze
+        run: uv run robotcode analyze code src/gsa_compliance_robot/resources/
