@@ -7,19 +7,25 @@ from gsa_compliance_robot.browser_session import BrowserSession
 
 def _patched_builtin(browser_lib, variables=None):
     """Build a mock BuiltIn() whose get_library_instance('Browser') returns
-    browser_lib, and whose get_variable_value raises for any name not
-    present in `variables` (mimicking Robot's real behavior when a suite
-    variable doesn't exist yet)."""
+    browser_lib, and whose run_keyword_and_return_status('Variable Should
+    Exist', name) / get_variable_value(name) reflect the given `variables`
+    dict (mimicking Robot's real BuiltIn behavior: Variable Should Exist
+    raises -> status False when unset; get_variable_value never raises,
+    just returns the value or None)."""
     variables = variables or {}
     builtin = MagicMock()
     builtin.get_library_instance.return_value = browser_lib
 
-    def _get_variable_value(name):
-        if name in variables:
-            return variables[name]
-        raise Exception(f"Variable '{name}' not found")
+    def _get_variable_value(name, default=None):
+        return variables.get(name, default)
+
+    def _run_keyword_and_return_status(keyword_name, *args):
+        if keyword_name == "Variable Should Exist":
+            return args[0] in variables
+        raise AssertionError(f"Unexpected keyword in test double: {keyword_name}")
 
     builtin.get_variable_value.side_effect = _get_variable_value
+    builtin.run_keyword_and_return_status.side_effect = _run_keyword_and_return_status
     return builtin
 
 

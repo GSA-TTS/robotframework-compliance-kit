@@ -41,3 +41,25 @@ jobs:
         run: uv sync --extra dev --extra browser --extra allure
       - name: Run robotcode analyze
         run: uv run robotcode analyze code --exit-code-mask hint src/gsa_compliance_robot/resources/
+
+  robot-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Install dependencies
+        run: uv sync --extra dev --extra browser --extra allure --extra cloudgov --extra cloudlogs-aws --extra cloudlogs-azure --extra cloudlogs-gcp
+      - name: Install Playwright browser binaries
+        run: uv run rfbrowser init
+      - name: Lint the smoke suite itself
+        run: uv run robocop check --config tests/robot/robocop.toml tests/robot/
+      - name: Run Robot smoke suite (every exported keyword, at least once)
+        run: uv run robot --outputdir tests/robot/.smoke_results tests/robot/
+      - name: Upload Robot smoke suite report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: robot-smoke-results
+          path: tests/robot/.smoke_results/
+          retention-days: 14

@@ -42,6 +42,16 @@ Run GCP Log Query And Wait
 Get Violation Count
     [Documentation]    Count rows in CloudWatch Insights results (list of lists of
     ...    field dicts) where the given field equals '1'.
+    ...
+    ...    Uses a list comprehension rather than a generator expression:
+    ...    generator expressions execute their inner ``for``/``if`` clauses
+    ...    in a separate scope that Robot's ``$var`` substitution cannot
+    ...    see once nested past the first ``for``, causing
+    ...    "variable is used in a scope where it cannot be seen" at
+    ...    runtime (this affected the original M-26-14 keyword this was
+    ...    ported from too - it was never actually exercised against a
+    ...    live Robot run until this package's smoke-test suite caught it;
+    ...    see https://github.com/GSA-TTS/robotframework-compliance-kit/issues/13).
     [Arguments]    ${results}    ${flag_field}=violation
-    ${count}=    Evaluate    sum(1 for row in $results for field in row if field['field'] == $flag_field and field['value'] == '1')
+    ${count}=    Evaluate    sum([1 for row in $results for field in row if field['field'] == $flag_field and field['value'] == '1'])
     RETURN    ${count}

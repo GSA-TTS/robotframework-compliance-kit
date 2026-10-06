@@ -1,0 +1,29 @@
+# Robocop config for the Robot smoke-test suite (tests/robot/).
+#
+# Extends the shared package-level baseline (../../robocop.toml) with two
+# additional ignores specific to this directory's intentional patterns:
+#
+#   DOC02 - Missing [Documentation] in test cases. Most smoke-test cases
+#           are self-explanatory from their name ("<Keyword> Resolves And
+#           Runs") and don't need a docstring repeating that.
+#   VAR02 - Variable assigned but not used. Several smoke tests destructure
+#           `${status}    ${result}=    Run Keyword And Ignore Error` and
+#           intentionally only assert on ${result} (checking it's not a
+#           KeywordNotFound error), not on ${status} - the point of this
+#           suite is "did the keyword resolve", not "did it succeed"
+#           (several keywords are expected to fail in a CI environment
+#           with no live cloud credentials).
+
+include = ["*.robot", "*.resource"]
+language = ["en"]
+
+[lint]
+ignore = [
+	"LEN01", "LEN03", "LEN04", "LEN05", "LEN06", "LEN07", "LEN08", "LEN27", "LEN28",
+	"VAR05", "DOC03", "DEPR05", "DEPR06", "IMP01",
+	"DOC02",  # smoke-test case names are self-documenting
+	"VAR02",  # ${status} intentionally unused in several resolution-only checks
+]
+
+[format]
+line_length = 120

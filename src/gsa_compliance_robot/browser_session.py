@@ -60,23 +60,29 @@ class BrowserSession:
         if not existing_ids:
             browser_lib.new_browser("chromium", headless=headless)
 
-        try:
-            builtin.get_variable_value("${BROWSER_CONTEXT}")
-            has_context = True
-        except Exception:  # noqa: BLE001
-            has_context = False
+        has_context = self._variable_exists(builtin, "${BROWSER_CONTEXT}")
         if not has_context:
             context = browser_lib.new_context()
             builtin.set_suite_variable("${BROWSER_CONTEXT}", context)
 
-        try:
-            builtin.get_variable_value("${PAGE}")
-            has_page = True
-        except Exception:  # noqa: BLE001
-            has_page = False
+        has_page = self._variable_exists(builtin, "${PAGE}")
         if not has_page:
             page = browser_lib.new_page()
             builtin.set_suite_variable("${PAGE}", page)
+
+    @staticmethod
+    def _variable_exists(builtin, name: str) -> bool:
+        """Return True iff `name` is a currently-set Robot variable.
+
+        `BuiltIn.get_variable_value` never raises — it silently returns its
+        `default` argument (``None`` unless given) when the variable is
+        unset, so a bare try/except around it can never detect "variable
+        missing." Use `variable_should_exist` (which does raise) instead,
+        wrapped in `run_keyword_and_return_status` for a boolean result.
+        """
+        return builtin.run_keyword_and_return_status(
+            "Variable Should Exist", name
+        )
 
     def check_browser_health(self) -> None:
         """Check if the browser is alive; reinitialize if not."""
@@ -91,11 +97,12 @@ class BrowserSession:
         """Close the browser context and all browsers, swallowing errors."""
         builtin = self._builtin()
         browser_lib = builtin.get_library_instance("Browser")
-        try:
-            context = builtin.get_variable_value("${BROWSER_CONTEXT}")
-            browser_lib.close_context(context)
-        except Exception:  # noqa: BLE001
-            pass
+        if self._variable_exists(builtin, "${BROWSER_CONTEXT}"):
+            try:
+                context = builtin.get_variable_value("${BROWSER_CONTEXT}")
+                browser_lib.close_context(context)
+            except Exception:  # noqa: BLE001
+                pass
         try:
             browser_lib.close_browser()
         except Exception:  # noqa: BLE001

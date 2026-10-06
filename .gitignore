@@ -1,4 +1,5 @@
 results/
+tests/robot/.smoke_results/
 .pytest_cache/
 .coverage
 coverage.xml
