@@ -16,14 +16,19 @@ backend a given environment uses:
   - "cf_cli":  Shells out to the `cf` CLI (`cf login`, `cf curl`). Useful in
                environments where interactive SSO already happened via `cf
                login --sso` and a token refresh is undesirable.
-  - "browser": Delegates session establishment to a Playwright/Browser
-               session the caller already set up (e.g., via
-               `browser_session.py`); this client only builds headers from
-               a token the caller extracts from that session. Kept as a
-               documented strategy name for Robot callers that need to
-               branch on `CLOUDGOV_AUTH_METHOD`; the actual browser
-               automation lives in `browser_session.py` + consumer-side
-               `.resource` files, not here.
+  - "browser": The caller already established a session via a
+               Playwright/Browser session (e.g., `browser_session.py`) and
+               extracted a bearer token from it (cookie, local storage, or
+               an intercepted network request). Call
+               `authenticate_with_browser_token(token)` to register that
+               token with this client — it is a thin, explicitly-named
+               alias of `authenticate_with_token(existing_token=token)` so
+               Robot suites that branch on `CLOUDGOV_AUTH_METHOD == BROWSER`
+               have a method name that matches their mental model, without
+               duplicating the normalization logic. This client does not
+               perform the browser automation itself; that remains the
+               responsibility of `browser_session.py` and consumer-side
+               `.resource` files.
 
 Real-API-first: unlike gsa-pages's original `cloudgov_api.resource` (which
 returned hardcoded mock dictionaries), this client always calls the real
@@ -139,6 +144,21 @@ class CloudGovClient:
                 "Not authenticated — call authenticate_with_token first"
             )
         return {"Authorization": f"Bearer {self._token}"}
+
+    def authenticate_with_browser_token(self, token: str) -> str:
+        """Register a bearer token extracted from an existing browser session.
+
+        Thin, explicitly-named wrapper around
+        `authenticate_with_token(existing_token=token)` for the "browser"
+        auth strategy described in the module docstring: the caller is
+        responsible for establishing the browser session (via
+        `browser_session.py`) and extracting the token (from a cookie,
+        local storage entry, or intercepted request header); this method
+        only registers it with this client so subsequent REST calls
+        (`get_organization_guid`, `query_audit_events`, etc.) are
+        authenticated.
+        """
+        return self.authenticate_with_token(existing_token=token)
 
     def get_organization_guid(self, org_name: str) -> str:
         """Return the GUID for an organization name via the REST API."""

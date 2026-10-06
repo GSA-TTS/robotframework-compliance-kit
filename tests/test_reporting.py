@@ -121,6 +121,30 @@ class TestValidateArtifactCompleteness:
         result = reporting.validate_artifact_completeness(store, "AC", [], [])
         assert result["completeness_percentage"] == 100.0
 
+    def test_exact_match_without_timestamp_suffix(self, store):
+        result = reporting.validate_artifact_completeness(
+            store, "AC", ["AC_evidence"], ["AC_evidence"]
+        )
+        assert result["missing_artifacts"] == []
+
+    def test_does_not_false_positive_on_unrelated_substring(self, store):
+        # Regression test for the substring-matching bug in the original
+        # gsa-pages implementation: a required name that is a substring of
+        # an unrelated generated name must NOT count as present.
+        result = reporting.validate_artifact_completeness(
+            store, "AC", ["BACKUP_report_123"], ["AC"]
+        )
+        assert result["missing_artifacts"] == ["AC"]
+        assert result["completeness_percentage"] == 0.0
+
+    def test_requires_underscore_boundary_not_arbitrary_prefix(self, store):
+        # "AC_evidence" must not match "AC_evidenceXYZ_123" (no underscore
+        # boundary after the required name).
+        result = reporting.validate_artifact_completeness(
+            store, "AC", ["AC_evidenceXYZ_123"], ["AC_evidence"]
+        )
+        assert result["missing_artifacts"] == ["AC_evidence"]
+
 
 class TestGenerateComplianceDashboard:
     def test_aggregates_across_reports(self, store):

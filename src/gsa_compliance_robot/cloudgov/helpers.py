@@ -50,11 +50,24 @@ def filter_events_by_date_range(
 ) -> dict[str, Any]:
     """Return a copy of `events_json` with `resources` filtered to [start_date, end_date].
 
-    Dates are ISO 8601 strings (`Z` suffix accepted). Never mutates the
-    input dict — a shallow copy is returned even when `events_json` is
-    already a dict (the original M-26-14 implementation mutated its input
-    in place, which is surprising for callers holding a reference to the
-    same dict elsewhere).
+    Dates are ISO 8601 strings (`Z` suffix accepted).
+
+    .. note::
+        **Behavior change from the original M-26-14 implementation**: the
+        source ``CloudGovHelpers.filter_events_by_date_range`` mutated its
+        input dict in place when a dict (rather than a JSON string) was
+        passed — ``events_data["resources"] = filtered`` on the *same
+        object* the caller passed in. This version always returns a new
+        dict via a shallow copy (``dict(events_json)``), so callers holding
+        a reference to the original dict will **not** see it mutated. This
+        is deliberate: implicit mutation of caller-owned data is a common
+        source of hard-to-trace bugs, and no consumer of the original
+        function has migrated to this package yet (see
+        https://github.com/GSA-TTS/robotframework-compliance-kit/issues/9),
+        so there is no compatibility constraint preventing the safer
+        behavior. If M-26-14 migrates (issue #11) and happens to depend on
+        the old mutate-in-place behavior, that dependency should be fixed
+        at the call site, not reintroduced here.
     """
     events_data = json.loads(events_json) if isinstance(events_json, str) else dict(events_json)
 

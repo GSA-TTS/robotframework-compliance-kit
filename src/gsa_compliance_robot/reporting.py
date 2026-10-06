@@ -225,14 +225,36 @@ def validate_artifact_completeness(
 ) -> dict[str, Any]:
     """Check that every entry in `required_artifacts` has a matching generated artifact.
 
-    Matching is substring-based (a required name is considered present if
-    it appears as a substring of any generated artifact name) to tolerate
-    timestamp/suffix variation in generated filenames.
+    A required name is considered present if some generated artifact name
+    equals it exactly, or starts with it followed by an underscore (the
+    separator `generate_artifact_filename` uses between the artifact name
+    and its timestamp suffix, e.g. required ``"AC_evidence"`` matches
+    generated ``"AC_evidence_20240101000000"``).
+
+    .. note::
+        **Behavior change from the original gsa-pages implementation**:
+        the source ``reporting.resource`` ``Validate Artifact
+        Completeness`` keyword used plain substring matching (``required
+        in generated``), which has a latent false-positive bug: a required
+        name that happens to be a substring of an unrelated generated name
+        would incorrectly count as present (e.g. required ``"AC"`` would
+        match generated ``"BACKUP_report_123"``). This version requires an
+        exact match or a match on the `<name>_<timestamp>` boundary
+        instead of an arbitrary substring. No consumer of the original
+        keyword has migrated to this package yet (see
+        https://github.com/GSA-TTS/robotframework-compliance-kit/issues/9),
+        so there is no compatibility constraint preventing this
+        correctness fix. gsa-pages (issue #12) should re-verify its own
+        required/generated artifact naming conventions satisfy this
+        stricter check during migration.
     """
     missing = [
         required
         for required in required_artifacts
-        if not any(required in generated for generated in generated_artifacts)
+        if not any(
+            generated == required or generated.startswith(f"{required}_")
+            for generated in generated_artifacts
+        )
     ]
     total_required = len(required_artifacts)
     completeness = (

@@ -20,6 +20,14 @@ Authenticate With Cloud Gov Token
     ${token}=    CloudGov.Authenticate With Token    ${username}    ${password}    ${existing_token}
     RETURN    ${token}
 
+Authenticate With Cloud Gov Browser Token
+    [Documentation]    Register a bearer token already extracted from an
+    ...    established browser session (see browser.resource for session
+    ...    setup). This client does not perform browser automation itself.
+    [Arguments]    ${token}
+    ${registered}=    CloudGov.Authenticate With Browser Token    ${token}
+    RETURN    ${registered}
+
 Get Cloud Gov Organization GUID
     [Documentation]    Return the GUID for an organization name via the REST API.
     [Arguments]    ${org_name}

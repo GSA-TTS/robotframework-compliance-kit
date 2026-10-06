@@ -29,6 +29,12 @@ class TestAuthenticateWithToken:
         with pytest.raises(CloudGovAuthError):
             client.authenticate_with_token()
 
+    def test_authenticate_with_browser_token_delegates_to_existing_token(self):
+        client = CloudGovClient(auth_method="browser")
+        token = client.authenticate_with_browser_token("browser-extracted-token")
+        assert token == "browser-extracted-token"
+        assert client._token == "browser-extracted-token"
+
     @patch("requests.post")
     def test_password_grant_success(self, mock_post):
         mock_post.return_value = MagicMock(
