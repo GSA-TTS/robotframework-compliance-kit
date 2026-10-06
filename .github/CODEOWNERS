@@ -1,0 +1,24 @@
+# CODEOWNERS for gsa-compliance-robot
+#
+# This package is a dependency of GSA-TTS/M-26-14 and GSA-TTS/gsa-pages.
+# A breaking keyword rename or auth-handling regression here directly
+# breaks both consumers' CI. Require review from maintainers familiar
+# with both consumer repos before merging to main.
+#
+# See CONTRIBUTING.md for the deprecation-shim policy that must accompany
+# any breaking change.
+
+# Default owner for everything not matched below.
+*                               @JJediny
+
+# Security-critical modules: secret masking and env handling affect every
+# downstream consumer's credential hygiene. Treat changes here with extra
+# scrutiny.
+/src/gsa_compliance_robot/redaction.py       @JJediny
+/src/gsa_compliance_robot/env.py             @JJediny
+/src/gsa_compliance_robot/cloudgov/          @JJediny
+
+# Governance / release process files.
+/CONTRIBUTING.md                             @JJediny
+/SECURITY.md                                 @JJediny
+/.github/workflows/                          @JJediny
