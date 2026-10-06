@@ -3,9 +3,16 @@
 Reusable Robot Framework automations and audit-evidence helpers for GSA
 security assessments and RPA tasks.
 
-> **Status: internal bootstrap.** This repository is not yet public. See the
-> issue tracker for the pre-release checklist before any public announcement
-> or external promotion.
+[![Test](https://github.com/GSA-TTS/robotframework-compliance-kit/actions/workflows/test.yml/badge.svg)](https://github.com/GSA-TTS/robotframework-compliance-kit/actions/workflows/test.yml)
+[![Secret Scan](https://github.com/GSA-TTS/robotframework-compliance-kit/actions/workflows/secret-scan.yml/badge.svg)](https://github.com/GSA-TTS/robotframework-compliance-kit/actions/workflows/secret-scan.yml)
+[![License: CC0-1.0](https://img.shields.io/badge/License-CC0%201.0-lightgrey.svg)](http://creativecommons.org/publicdomain/zero/1.0/)
+
+> **Early-stage, public.** This package is usable today (install from this
+> git repo; see [Installation](#installation)) but has not yet been adopted
+> by its two intended first consumers (`M-26-14`, `gsa-pages`) and has not
+> been published to PyPI. See the [open issues](https://github.com/GSA-TTS/robotframework-compliance-kit/issues)
+> for the active hardening/migration roadmap — contributions and early
+> feedback are welcome.
 
 ## Why this exists
 
@@ -41,12 +48,17 @@ Robot Framework keywords.
 
 ## Installation
 
+Not yet published to PyPI (see [#7](https://github.com/GSA-TTS/robotframework-compliance-kit/issues/7)).
+Install directly from this repo for now:
+
 ```bash
-pip install gsa-compliance-robot
-# or, for Browser-library keywords:
-pip install "gsa-compliance-robot[browser]"
-# or, for Allure keywords:
-pip install "gsa-compliance-robot[allure]"
+pip install "gsa-compliance-robot @ git+https://github.com/GSA-TTS/robotframework-compliance-kit.git@main"
+# or pin to a tag once releases start:
+pip install "gsa-compliance-robot @ git+https://github.com/GSA-TTS/robotframework-compliance-kit.git@v0.1.0"
+
+# optional extras:
+pip install "gsa-compliance-robot[browser] @ git+https://github.com/GSA-TTS/robotframework-compliance-kit.git@main"
+pip install "gsa-compliance-robot[allure] @ git+https://github.com/GSA-TTS/robotframework-compliance-kit.git@main"
 ```
 
 ## Usage in a Robot suite

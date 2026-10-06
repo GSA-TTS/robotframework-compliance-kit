@@ -7,15 +7,14 @@ status: canonical
 
 ## Before You Start
 
-This repository is **internal bootstrap** — not yet public. See the open
-issues for the pre-public-release checklist. Do not link to or reference
-this repository from public-facing documentation until that checklist is
-complete and the repository visibility has been changed.
-
 This package is a dependency consumed by other GSA-TTS compliance/audit
 repositories ([`M-26-14`](https://github.com/GSA-TTS/M-26-14),
-[`gsa-pages`](https://github.com/GSA-TTS/gsa-pages)). Treat every keyword
-rename or signature change as a breaking change for those consumers.
+[`gsa-pages`](https://github.com/GSA-TTS/gsa-pages)), once their migration
+issues ([#11](https://github.com/GSA-TTS/robotframework-compliance-kit/issues/11),
+[#12](https://github.com/GSA-TTS/robotframework-compliance-kit/issues/12))
+land. Treat every keyword rename or signature change as a breaking change
+for those consumers, even before migration lands — the point of this
+package is to be a stable target for them to adopt.
 
 Before opening a change:
 
