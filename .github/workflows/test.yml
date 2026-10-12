@@ -58,7 +58,7 @@ jobs:
         run: uv run robot --outputdir tests/robot/.smoke_results tests/robot/
       - name: Upload Robot smoke suite report
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: robot-smoke-results
           path: tests/robot/.smoke_results/
