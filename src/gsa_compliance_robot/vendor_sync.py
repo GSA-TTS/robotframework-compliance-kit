@@ -1,26 +1,150 @@
-"""Vendor-sync CLI stub.
+"""Vendor-sync CLI for gsa-compliance-robot `.resource` files.
 
-Phase 0/1 scope note: the full vendor-sync workflow (copy pinned .resource
-files into a consumer repo under tests/resources/vendor/, write a
-vendor.lock.json with sha256 hashes, and a `--check` mode for CI drift
-detection) is intentionally deferred — see the "Vendoring" tracking issue.
-
-For now this is a minimal placeholder so `gsa-robot-vendor --help` resolves
-and the console-script entry point in pyproject.toml is valid. Consumers
-should install this package as a normal Python dependency
-(`pip install gsa-compliance-robot`) and import `.resource` files directly
-from the installed package path via `Resource` imports, e.g.:
-
-    Resource    ${EXECDIR}/.venv/lib/python3.*/site-packages/gsa_compliance_robot/resources/env.resource
-
-or more robustly, resolve the path in Python/Robot via
-`importlib.resources.files("gsa_compliance_robot.resources")`.
+Copies the package's `.resource` files into a consumer repository directory
+(e.g., `tests/resources/vendor/`) with a `# VENDORED from gsa-compliance-robot`
+banner and writes a deterministic `vendor.lock.json` recording per-file
+SHA-256 digests. Provides `--check` / `check` mode for CI drift detection.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
+import json
+import re
 import sys
+from pathlib import Path
+from typing import Any
+
+from gsa_compliance_robot import __version__
+
+LOCKFILE_NAME = "vendor.lock.json"
+RESOURCES_DIR = Path(__file__).resolve().parent / "resources"
+_IMMUTABLE_REF_RE = re.compile(
+    r"^(?:[0-9a-f]{40}|v[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.]+)?)$"
+)
+
+
+def validate_immutable_ref(ref: str) -> str:
+    """Ensure `ref` is an immutable 40-char commit SHA or semantic version tag (`vX.Y.Z`)."""
+    cleaned = ref.strip() if isinstance(ref, str) else ""
+    if not _IMMUTABLE_REF_RE.match(cleaned):
+        raise ValueError(
+            f"Ref {ref!r} must be a 40-character commit SHA or an exact version tag (e.g. 'v0.2.0'), not a mutable branch."
+        )
+    return cleaned
+
+
+def _sha256_bytes(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+
+def _header_line(version: str) -> str:
+    return f"# VENDORED from gsa-compliance-robot v{version} \u2014 do not edit\n"
+
+
+def _render_vendored_resource(source_path: Path, version: str) -> bytes:
+    raw = source_path.read_text(encoding="utf-8")
+    # Strip any pre-existing VENDORED banner if re-rendering
+    lines = raw.splitlines(keepends=True)
+    if lines and lines[0].startswith("# VENDORED from gsa-compliance-robot"):
+        raw = "".join(lines[1:])
+    rendered = _header_line(version) + raw
+    if not rendered.endswith("\n"):
+        rendered += "\n"
+    return rendered.encode("utf-8")
+
+
+def _expected_bundle(
+    version: str, resources_dir: Path = RESOURCES_DIR
+) -> tuple[dict[str, bytes], bytes]:
+    """Return `(filename -> rendered_bytes, lockfile_bytes)`."""
+    if not resources_dir.is_dir():
+        raise FileNotFoundError(f"Package resources directory not found: {resources_dir}")
+
+    rendered_files: dict[str, bytes] = {}
+    lock_entries: dict[str, dict[str, str]] = {}
+
+    for src in sorted(resources_dir.glob("*.resource")):
+        content = _render_vendored_resource(src, version)
+        rendered_files[src.name] = content
+        lock_entries[src.name] = {
+            "version": version,
+            "sha256": _sha256_bytes(content),
+        }
+
+    lock_payload: dict[str, Any] = {
+        "schema_version": 1,
+        "package": "gsa-compliance-robot",
+        "version": version,
+        "resources": lock_entries,
+    }
+    lock_bytes = (json.dumps(lock_payload, indent=2, sort_keys=True) + "\n").encode(
+        "utf-8"
+    )
+    return rendered_files, lock_bytes
+
+
+def sync_resources(
+    dest: Path,
+    version: str = __version__,
+    resources_dir: Path = RESOURCES_DIR,
+) -> dict[str, Any]:
+    """Write vendored `.resource` files and `vendor.lock.json` into `dest`."""
+    rendered_files, lock_bytes = _expected_bundle(version, resources_dir)
+    dest.mkdir(parents=True, exist_ok=True)
+
+    for name, content in rendered_files.items():
+        (dest / name).write_bytes(content)
+
+    (dest / LOCKFILE_NAME).write_bytes(lock_bytes)
+    return json.loads(lock_bytes.decode("utf-8"))
+
+
+def check_resources(
+    dest: Path,
+    version: str | None = None,
+    resources_dir: Path = RESOURCES_DIR,
+) -> list[str]:
+    """Verify `dest` matches the expected vendored `.resource` bundle and lockfile."""
+    errors: list[str] = []
+    lock_path = dest / LOCKFILE_NAME
+    if not lock_path.is_file():
+        return [f"Missing lockfile: {lock_path}"]
+
+    try:
+        lock_on_disk = json.loads(lock_path.read_text(encoding="utf-8"))
+    except Exception as exc:
+        return [f"Invalid JSON in {lock_path}: {exc}"]
+
+    effective_version = version or str(lock_on_disk.get("version") or __version__)
+    rendered_files, expected_lock_bytes = _expected_bundle(
+        effective_version, resources_dir
+    )
+
+    actual_lock_bytes = lock_path.read_bytes()
+    if actual_lock_bytes != expected_lock_bytes:
+        errors.append(
+            f"Lockfile drift detected in {lock_path} (expected v{effective_version})"
+        )
+
+    for name, expected_bytes in sorted(rendered_files.items()):
+        target_file = dest / name
+        if not target_file.is_file():
+            errors.append(f"Missing vendored resource: {name}")
+            continue
+        actual_bytes = target_file.read_bytes()
+        if actual_bytes != expected_bytes:
+            errors.append(
+                f"Content/SHA-256 mismatch for {name}: expected "
+                f"{_sha256_bytes(expected_bytes)}, got {_sha256_bytes(actual_bytes)}"
+            )
+
+    for existing in sorted(dest.glob("*.resource")):
+        if existing.name not in rendered_files:
+            errors.append(f"Unexpected extra resource file in {dest}: {existing.name}")
+
+    return errors
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -28,7 +152,7 @@ def main(argv: list[str] | None = None) -> int:
         prog="gsa-robot-vendor",
         description=(
             "Vendor-sync CLI for gsa-compliance-robot .resource files "
-            "(full implementation tracked separately; see repo issues)."
+            "(copies pinned .resource files with vendor.lock.json and verifies drift)."
         ),
     )
     parser.add_argument(
@@ -36,20 +160,47 @@ def main(argv: list[str] | None = None) -> int:
         nargs="?",
         default="help",
         choices=["sync", "check", "help"],
-        help="Not yet implemented in this bootstrap release.",
+        help="Command to execute: 'sync', 'check', or 'help'.",
+    )
+    parser.add_argument(
+        "--dest",
+        type=Path,
+        default=Path("tests/resources/vendor"),
+        help="Destination directory for vendored .resource files (default: tests/resources/vendor).",
+    )
+    parser.add_argument(
+        "--version",
+        dest="pkg_version",
+        default=None,
+        help=f"Package version string to stamp (default: {__version__}).",
+    )
+    parser.add_argument(
+        "--check",
+        action="store_true",
+        help="Verify destination matches expected vendored files without writing.",
     )
     args = parser.parse_args(argv)
 
-    if args.command in ("sync", "check"):
-        print(
-            "gsa-robot-vendor: 'sync'/'check' are not implemented in this "
-            "bootstrap release. See the repository issue tracker for the "
-            "vendoring rollout plan.",
-            file=sys.stderr,
-        )
-        return 1
+    if args.command == "help":
+        parser.print_help()
+        return 0
 
-    parser.print_help()
+    if args.command == "check" or args.check:
+        errors = check_resources(dest=args.dest, version=args.pkg_version)
+        if errors:
+            for err in errors:
+                print(f"gsa-robot-vendor: DRIFT: {err}", file=sys.stderr)
+            return 1
+        print(f"gsa-robot-vendor: OK ({args.dest} is in sync)")
+        return 0
+
+    effective_version = args.pkg_version or __version__
+    payload = sync_resources(dest=args.dest, version=effective_version)
+    count = len(payload.get("resources", {}))
+    print(
+        f"gsa-robot-vendor: synced {count} .resource files "
+        f"(v{effective_version}) -> {args.dest}"
+    )
     return 0
 
 

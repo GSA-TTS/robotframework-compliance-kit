@@ -37,8 +37,13 @@ implementation instead of re-authoring or forking it.
 | `gsa_compliance_robot.redaction` | Robot listener masking secrets in `output.xml`/`log.html` | gsa-pages `RedactionListener.py` |
 | `gsa_compliance_robot.api_common` | HTTP header builders, response validation | gsa-pages `api_common.resource` |
 | `gsa_compliance_robot.browser_session` | Playwright/Browser lifecycle keywords | gsa-pages `browser.resource` |
+| `gsa_compliance_robot.browser_recording` | Redacted operator-action recorder for RF Browser exploration | gsa-pages `scripts/testing/browser_recording.py` + `browser_recording.resource` |
 | `gsa_compliance_robot.reporting` | Compliance artifact/report/dashboard generation | gsa-pages `common.resource` + `reporting.resource` |
 | `gsa_compliance_robot.allure_helpers` | Allure attachment keywords | gsa-pages `allure.resource` |
+| `gsa_compliance_robot.bod1801` | DHS BOD 18-01 SPF, DMARC, TLS 1.2+, HTTPS, and HSTS checks | gsa-pages `BOD1801Checks.py` |
+| `gsa_compliance_robot.vulnerability_timeline` | GSA vulnerability remediation SLA timeline tracking | gsa-pages `VulnerabilityTimeline.py` |
+| `gsa_compliance_robot.evidence_manifest` | Evidence run provenance and SHA-256 manifest writer | gsa-pages `EvidenceManifest.py` |
+| `gsa_compliance_robot.github` | Shared GitHub REST/GraphQL client + repository URL normalizer | gsa-pages `scripts/lib/github_client.py` + `RepoUrlNormalizer.py` |
 | `gsa_compliance_robot.cloudgov` | **Unified** cloud.gov API/CLI client (token, `cf` CLI auth) | Merged from M-26-14 `CloudGovAPI.resource`/`CloudGovCLI.resource`/`CloudGovHelpers.py` **and** gsa-pages `cloudgov_auth.resource`/`cloudgov_api.resource` |
 | `gsa_compliance_robot.cloudlogs` | AWS CloudWatch Insights / Azure Log Analytics / GCP Cloud Logging adapters behind one interface | M-26-14 `lib/aws_insights.py`, `azure_monitor.py`, `gcp_logging.py` |
 
@@ -78,11 +83,20 @@ Fetch Audit Events
 
 ## Vendoring into a consumer repo
 
-This is **out of scope for the initial bootstrap**. The intended model —
-install the Python package normally, but vendor (copy) the `.resource`
-files into each consumer repo at a pinned version with a CI drift check —
-is tracked as a separate issue. For now, resolve `.resource` file paths via
-your installed package location or `importlib.resources`.
+Consumer repositories can vendor this repo as a pinned git submodule (e.g.,
+`vendor/robotframework-compliance-kit`) and/or sync the `.resource` files
+with a SHA-256 lockfile using `gsa-robot-vendor`:
+
+```bash
+# Sync .resource files and write vendor.lock.json
+gsa-robot-vendor sync --dest tests/resources/vendor
+
+# Verify zero drift in CI
+gsa-robot-vendor check --dest tests/resources/vendor
+```
+
+A reusable GitHub Actions workflow (`.github/workflows/vendor-drift-check.yml`)
+is also provided for `workflow_call` consumers.
 
 ## Development
 

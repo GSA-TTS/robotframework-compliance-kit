@@ -16,7 +16,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Install dependencies
-        run: uv sync --extra dev --extra browser --extra allure --extra cloudgov --extra cloudlogs-aws --extra cloudlogs-azure --extra cloudlogs-gcp
+        run: uv sync --extra dev --extra browser --extra allure --extra cloudgov --extra bod1801 --extra cloudlogs-aws --extra cloudlogs-azure --extra cloudlogs-gcp
       - name: Run pytest with coverage
         run: uv run pytest --cov=gsa_compliance_robot --cov-report=term-missing --cov-report=xml
 
@@ -38,7 +38,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Install dependencies
-        run: uv sync --extra dev --extra browser --extra allure
+        run: uv sync --extra dev --extra browser --extra allure --extra bod1801
       - name: Run robotcode analyze
         run: uv run robotcode analyze code --exit-code-mask hint src/gsa_compliance_robot/resources/
 
@@ -49,7 +49,7 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
       - name: Install dependencies
-        run: uv sync --extra dev --extra browser --extra allure --extra cloudgov --extra cloudlogs-aws --extra cloudlogs-azure --extra cloudlogs-gcp
+        run: uv sync --extra dev --extra browser --extra allure --extra cloudgov --extra bod1801 --extra cloudlogs-aws --extra cloudlogs-azure --extra cloudlogs-gcp
       - name: Install Playwright browser binaries
         run: uv run rfbrowser init
       - name: Lint the smoke suite itself
