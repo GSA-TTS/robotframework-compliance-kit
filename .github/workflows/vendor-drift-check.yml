@@ -1,0 +1,33 @@
+name: Vendor Drift Check
+
+on:
+  workflow_call:
+    inputs:
+      dest:
+        description: "Directory containing vendored .resource files and vendor.lock.json"
+        required: false
+        type: string
+        default: "tests/resources/vendor"
+      ref:
+        description: "Git ref/tag of GSA-TTS/robotframework-compliance-kit to check against"
+        required: false
+        type: string
+        default: "main"
+
+permissions:
+  contents: read
+
+jobs:
+  vendor-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+      - name: Run gsa-robot-vendor check
+        env:
+          VENDOR_DEST: ${{ inputs.dest }}
+          PACKAGE_REF: ${{ inputs.ref }}
+        run: |
+          uvx --from "git+https://github.com/GSA-TTS/robotframework-compliance-kit.git@${PACKAGE_REF}" \
+            gsa-robot-vendor check --dest "${VENDOR_DEST}"

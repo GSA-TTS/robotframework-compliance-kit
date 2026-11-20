@@ -4,10 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [0.2.0] - 2026-11-20
 
 ### Added
 
+- Implemented `gsa-robot-vendor` CLI (`sync` and `check` / `--check` modes) in `gsa_compliance_robot.vendor_sync` with `# VENDORED from gsa-compliance-robot` banners, `vendor.lock.json` SHA-256 digests, and reusable `.github/workflows/vendor-drift-check.yml` workflow (closes #10).
+- Extracted additional reusable compliance foundations from `GSA-TTS/gsa-pages` (with matching `.resource` files and unit + Robot smoke tests):
+  - `gsa_compliance_robot.bod1801` + `resources/bod1801.resource` — DHS BOD 18-01 SPF, DMARC, TLS 1.2+, HTTPS, and HSTS checks.
+  - `gsa_compliance_robot.vulnerability_timeline` + `resources/vulnerability_timeline.resource` — GSA vulnerability remediation SLA timeline tracking (15/30/90/180-day deadlines) and Markdown report formatting.
+  - `gsa_compliance_robot.evidence_manifest` + `resources/evidence_manifest.resource` — Evidence run provenance and SHA-256 file/directory manifest writer.
+  - `gsa_compliance_robot.browser_recording` + `resources/browser_recording.resource` — Redacted DOM operator-action recorder for RF Browser exploration.
+  - `gsa_compliance_robot.github` (`client.py`, `url_normalizer.py`) + `resources/github.resource` — Shared GitHub REST/GraphQL client with SSRF host validation, exponential backoff / `Retry-After`, pagination, `RepoIssuesClient`, and `RepoUrlNormalizer`.
 - Full test coverage for previously-gapped modules (closes #6):
   - `tests/test_browser_session.py` — mocks `BuiltIn().get_library_instance('Browser')` to unit test lifecycle keywords without a live Playwright session.
   - `tests/test_allure_helpers.py` — same pattern for `AllureLibrary`.

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "gsa-compliance-robot"
-version = "0.1.0"
+version = "0.2.0"
 description = "Reusable Robot Framework automations and audit-evidence helpers for GSA security assessments and RPA tasks"
 readme = "README.md"
 license = { text = "CC0-1.0" }
@@ -25,7 +25,11 @@ dependencies = [
 
 [project.optional-dependencies]
 browser = [
-    "robotframework-browser>=19.7.2,<21",
+    "robotframework-browser>=19.7.2,<22",
+]
+bod1801 = [
+    "dnspython>=2.6.0",
+    "requests",
 ]
 cloudgov = [
     "requests",
