@@ -10,6 +10,7 @@ provides a repo-scoped `RepoIssuesClient` facade.
 from __future__ import annotations
 
 import json
+import re
 import time
 import urllib.error
 import urllib.parse
@@ -202,16 +203,28 @@ class GitHubClient:
         return self.post(f"{API_ROOT}/graphql", payload)
 
 
+_REPO_SEGMENT_RE = re.compile(r"^[A-Za-z0-9_.-]+$")
+
+
 class RepoIssuesClient:
     """Repo-scoped facade around :class:`GitHubClient` for issue operations."""
 
     def __init__(
         self, repo: str, token: str, *, user_agent: str = "gsa-compliance-robot"
     ) -> None:
-        if "/" not in repo:
+        if "/" not in repo or repo.count("/") != 1:
             raise ValueError(f"Repository must be in owner/repo format: {repo}")
+        owner, name = repo.split("/", 1)
+        if (
+            not _REPO_SEGMENT_RE.match(owner)
+            or not _REPO_SEGMENT_RE.match(name)
+            or owner in {".", ".."}
+            or name in {".", ".."}
+        ):
+            raise ValueError(f"Invalid GitHub repository identifier: {repo!r}")
         self.repo = repo
-        self.owner, self.name = repo.split("/", 1)
+        self.owner = owner
+        self.name = name
         self.base_url = f"{API_ROOT}/repos/{self.owner}/{self.name}"
         self._client = GitHubClient(token=token, user_agent=user_agent)
         self._issues_by_title_cache: dict[str, dict[str, Any]] | None = None

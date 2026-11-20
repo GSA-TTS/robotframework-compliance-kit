@@ -9,10 +9,9 @@ on:
         type: string
         default: "tests/resources/vendor"
       ref:
-        description: "Git ref/tag of GSA-TTS/robotframework-compliance-kit to check against"
-        required: false
+        description: "Immutable 40-character commit SHA or exact release tag (e.g. v0.2.0) of GSA-TTS/robotframework-compliance-kit"
+        required: true
         type: string
-        default: "main"
 
 permissions:
   contents: read
@@ -21,13 +20,20 @@ jobs:
   vendor-drift:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Install uv
-        uses: astral-sh/setup-uv@v7
-      - name: Run gsa-robot-vendor check
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+      - name: Validate immutable ref and run gsa-robot-vendor check
         env:
           VENDOR_DEST: ${{ inputs.dest }}
           PACKAGE_REF: ${{ inputs.ref }}
         run: |
+          set -euo pipefail
+          if [[ ! "${PACKAGE_REF}" =~ ^([0-9a-f]{40}|v[0-9]+\.[0-9]+\.[0-9]+(-[A-Za-z0-9.]+)?)$ ]]; then
+            echo "::error::inputs.ref must be an immutable 40-char commit SHA or exact version tag (e.g. v0.2.0), got '${PACKAGE_REF}'"
+            exit 2
+          fi
           uvx --from "git+https://github.com/GSA-TTS/robotframework-compliance-kit.git@${PACKAGE_REF}" \
             gsa-robot-vendor check --dest "${VENDOR_DEST}"

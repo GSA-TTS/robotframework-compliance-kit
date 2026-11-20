@@ -49,6 +49,23 @@ def test_validate_github_api_url():
         validate_github_api_url("https://github.com/repos/x/y")
 
 
+@pytest.mark.parametrize(
+    "bad_repo",
+    [
+        "just-a-name",
+        "GSA-TTS/repo/extra",
+        "GSA-TTS/repo?foo=bar",
+        "GSA-TTS/../evil",
+        "../GSA-TTS",
+        "GSA-TTS/repo#frag",
+        "GSA TTS/repo",
+    ],
+)
+def test_repo_issues_client_rejects_malformed_or_traversal_repo_names(bad_repo: str):
+    with pytest.raises(ValueError):
+        RepoIssuesClient(bad_repo, token="t")
+
+
 class _FakeHeaders:
     def get_content_charset(self, default: str) -> str:
         return default

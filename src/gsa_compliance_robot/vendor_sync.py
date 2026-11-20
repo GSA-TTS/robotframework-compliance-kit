@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -19,6 +20,19 @@ from gsa_compliance_robot import __version__
 
 LOCKFILE_NAME = "vendor.lock.json"
 RESOURCES_DIR = Path(__file__).resolve().parent / "resources"
+_IMMUTABLE_REF_RE = re.compile(
+    r"^(?:[0-9a-f]{40}|v[0-9]+\.[0-9]+\.[0-9]+(?:-[A-Za-z0-9.]+)?)$"
+)
+
+
+def validate_immutable_ref(ref: str) -> str:
+    """Ensure `ref` is an immutable 40-char commit SHA or semantic version tag (`vX.Y.Z`)."""
+    cleaned = ref.strip() if isinstance(ref, str) else ""
+    if not _IMMUTABLE_REF_RE.match(cleaned):
+        raise ValueError(
+            f"Ref {ref!r} must be a 40-character commit SHA or an exact version tag (e.g. 'v0.2.0'), not a mutable branch."
+        )
+    return cleaned
 
 
 def _sha256_bytes(data: bytes) -> str:

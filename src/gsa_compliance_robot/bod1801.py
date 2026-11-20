@@ -10,10 +10,13 @@ Behavior notes:
   a failing DNS or TLS probe is reported as a finding, not an exception.
 - `check_domain` is the single Robot-facing entry point; it fans out to
   DNS + TLS and returns the union of findings.
-- BOD 18-01 policy:
+- BOD 18-01 baseline probes performed:
     - SPF: `v=spf1 -all` (hard fail)
     - DMARC: `p=reject`
-    - HTTPS-only + HSTS enforced
+    - TLS 1.2+ handshake succeeds and negotiated cipher is not 3DES/RC4/DES
+      (note: observes the negotiated cipher on a single TLS 1.2+ connection;
+      does not enumerate all server-supported cipher suites)
+    - HTTPS endpoint responds (< 400) with a `Strict-Transport-Security` header
 - See https://cyber.dhs.gov/bod/18-01/ for the canonical policy text.
 """
 

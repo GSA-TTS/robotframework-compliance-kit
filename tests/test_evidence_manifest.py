@@ -9,7 +9,7 @@ from gsa_compliance_robot.evidence_manifest import EvidenceManifest
 
 
 def test_evidence_manifest_lifecycle_and_hashing(tmp_path: Path, monkeypatch):
-    monkeypatch.setenv("MANIFEST_TEST_PUBLIC", "visible-value")
+    monkeypatch.setenv("TARGET_ORG", "GSA-TTS")
     monkeypatch.setenv("MANIFEST_TEST_SECRET", "do-not-capture")
 
     m = EvidenceManifest()
@@ -18,7 +18,7 @@ def test_evidence_manifest_lifecycle_and_hashing(tmp_path: Path, monkeypatch):
         run_name="atu",
         source_system="gsa-pages",
         env_presence_keys=["MANIFEST_TEST_SECRET", "MISSING_KEY"],
-        env_capture_keys=["MANIFEST_TEST_PUBLIC"],
+        env_capture_keys=["TARGET_ORG"],
     )
     assert run_id
 
@@ -51,20 +51,56 @@ def test_evidence_manifest_lifecycle_and_hashing(tmp_path: Path, monkeypatch):
         "Verify team access",
         True,
         details="All teams matched",
-        metadata_json="not-json",
+        metadata_json="not-json-with-secret",
     )
 
-    out_path = m.write_manifest()
+    out_path = m.write_manifest("manifest.json")
     payload = json.loads(Path(out_path).read_text(encoding="utf-8"))
     assert payload["provenance"]["environment"]["present"]["MANIFEST_TEST_SECRET"] is True
     assert payload["provenance"]["environment"]["present"]["MISSING_KEY"] is False
-    assert (
-        payload["provenance"]["environment"]["captured"]["MANIFEST_TEST_PUBLIC"]
-        == "visible-value"
-    )
+    assert payload["provenance"]["environment"]["captured"]["TARGET_ORG"] == "GSA-TTS"
     assert len(payload["artifacts"]) == 3
     assert len(payload["checks"]) == 1
+    assert payload["checks"][0]["metadata"] == {"metadata_json_parse_error": True}
+    assert "raw" not in payload["checks"][0]["metadata"]
     assert json.loads(m.get_manifest_json())["run"]["id"] == run_id
+
+
+@pytest.mark.parametrize(
+    "bad_filename",
+    [
+        "/tmp/out.json",
+        "../../out.json",
+        "nested/out.json",
+        "manifest.txt",
+        "..",
+        "",
+    ],
+)
+def test_write_manifest_rejects_traversal_and_non_json_filenames(
+    tmp_path: Path, bad_filename: str
+):
+    m = EvidenceManifest()
+    m.start_run(run_dir=str(tmp_path))
+    with pytest.raises(ValueError, match="single .json filename"):
+        m.write_manifest(bad_filename)
+
+
+@pytest.mark.parametrize(
+    "forbidden_key",
+    [
+        "GITHUB_TOKEN",
+        "AWS_SECRET_ACCESS_KEY",
+        "DATABASE_URL",
+        "UNLISTED_CONFIG_VAR",
+    ],
+)
+def test_start_run_rejects_sensitive_or_unallowlisted_env_capture_keys(
+    tmp_path: Path, forbidden_key: str
+):
+    m = EvidenceManifest()
+    with pytest.raises(ValueError, match="not permitted in env_capture_keys"):
+        m.start_run(run_dir=str(tmp_path), env_capture_keys=[forbidden_key])
 
 
 def test_evidence_manifest_guards_before_start_run():

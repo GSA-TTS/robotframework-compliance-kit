@@ -13,14 +13,45 @@ import hashlib
 import json
 import os
 import platform
+import re
 import socket
 import sys
+import tempfile
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-__all__ = ["EvidenceManifest", "ManifestArtifact"]
+from gsa_compliance_robot.redaction import RedactionListener
+
+__all__ = [
+    "SAFE_ENV_CAPTURE_ALLOWLIST",
+    "EvidenceManifest",
+    "ManifestArtifact",
+]
+
+SAFE_ENV_CAPTURE_ALLOWLIST: frozenset[str] = frozenset(
+    {
+        "CI",
+        "EXECUTION_MODE",
+        "GITHUB_ACTIONS",
+        "GITHUB_REF",
+        "GITHUB_REF_NAME",
+        "GITHUB_REPOSITORY",
+        "GITHUB_RUN_ID",
+        "GITHUB_RUN_NUMBER",
+        "GITHUB_SHA",
+        "GITHUB_WORKFLOW",
+        "RUNNER_ARCH",
+        "RUNNER_OS",
+        "TARGET_ORG",
+    }
+)
+
+_SENSITIVE_KEY_RE = re.compile(
+    r"(TOKEN|SECRET|KEY|PASSWORD|PASSWD|CREDENTIAL|AUTH|PRIVATE|COOKIE|SESSION|BEARER|PAT|JWT|URL|DSN|CONN)",
+    re.IGNORECASE,
+)
 
 
 def _utc_now_iso() -> str:
@@ -50,16 +81,49 @@ def _ensure_dir(path: str | Path) -> None:
 
 
 def _read_env_subset(keys: list[str]) -> dict[str, str]:
+    """Capture non-sensitive environment variables from an explicit allowlist.
+
+    Rejects any variable name matching credential/secret patterns or outside
+    `SAFE_ENV_CAPTURE_ALLOWLIST`, and scrubs values through `RedactionListener`
+    as defense-in-depth.
+    """
     out: dict[str, str] = {}
     for k in keys:
+        if _SENSITIVE_KEY_RE.search(k) or k not in SAFE_ENV_CAPTURE_ALLOWLIST:
+            raise ValueError(
+                f"Environment variable {k!r} is not permitted in env_capture_keys "
+                "(use env_presence_keys to record boolean presence of sensitive variables)"
+            )
         v = os.environ.get(k)
         if v is not None and v != "":
-            out[k] = v
+            out[k] = RedactionListener._scrub(v)
     return out
 
 
 def _hash_string(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _validate_manifest_filename(run_dir: Path, filename: str) -> Path:
+    """Ensure `filename` is a single `.json` basename confined to `run_dir`."""
+    if (
+        not filename
+        or not isinstance(filename, str)
+        or "/" in filename
+        or "\\" in filename
+        or filename in {".", ".."}
+        or not filename.endswith(".json")
+    ):
+        raise ValueError(
+            "filename must be a single .json filename inside the run directory"
+        )
+    resolved_run_dir = run_dir.resolve()
+    out_path = (resolved_run_dir / filename).resolve()
+    if out_path.parent != resolved_run_dir or out_path.name != filename:
+        raise ValueError(
+            "filename must be a single .json filename inside the run directory"
+        )
+    return out_path
 
 
 @dataclass
@@ -176,7 +240,9 @@ class EvidenceManifest:
             raise RuntimeError(
                 "EvidenceManifest.start_run must be called before add_note"
             )
-        self._manifest["notes"].append({"at": _utc_now_iso(), "note": note})
+        self._manifest["notes"].append(
+            {"at": _utc_now_iso(), "note": RedactionListener._scrub(note)}
+        )
 
     def add_artifact(
         self,
@@ -238,9 +304,15 @@ class EvidenceManifest:
         metadata: dict[str, Any] = {}
         if metadata_json:
             try:
-                metadata = json.loads(metadata_json)
+                parsed_meta = json.loads(metadata_json)
+                metadata = (
+                    parsed_meta
+                    if isinstance(parsed_meta, dict)
+                    else {"value": parsed_meta}
+                )
             except Exception:
-                metadata = {"metadata_json_parse_error": True, "raw": metadata_json}
+                # Never persist raw unparsed input in case it contained sensitive data.
+                metadata = {"metadata_json_parse_error": True}
 
         stored_path = _safe_relpath(p, base_dir) if base_dir else path
 
@@ -278,9 +350,14 @@ class EvidenceManifest:
         metadata: dict[str, Any] = {}
         if metadata_json:
             try:
-                metadata = json.loads(metadata_json)
+                parsed_meta = json.loads(metadata_json)
+                metadata = (
+                    parsed_meta
+                    if isinstance(parsed_meta, dict)
+                    else {"value": parsed_meta}
+                )
             except Exception:
-                metadata = {"metadata_json_parse_error": True, "raw": metadata_json}
+                metadata = {"metadata_json_parse_error": True}
 
         self._manifest["checks"].append(
             {
@@ -288,7 +365,7 @@ class EvidenceManifest:
                 "check_id": check_id,
                 "title": title,
                 "passed": bool(passed),
-                "details": details,
+                "details": RedactionListener._scrub(details),
                 "control_ids": control_ids or [],
                 "related_artifacts": related_artifact_paths or [],
                 "metadata": metadata,
@@ -296,16 +373,29 @@ class EvidenceManifest:
         )
 
     def write_manifest(self, filename: str = "manifest.json") -> str:
-        """Write the manifest to `<run_dir>/<filename>` and return the path."""
+        """Write the manifest atomically to `<run_dir>/<filename>` and return the path."""
         if not self._manifest or self._run_dir is None or self._run_id is None:
             raise RuntimeError(
                 "EvidenceManifest.start_run must be called before write_manifest"
             )
 
+        run_dir_path = Path(self._run_dir)
+        out_path = _validate_manifest_filename(run_dir_path, filename)
         self._manifest["artifacts"] = self._artifacts
-        out_path = Path(self._run_dir) / filename
-        with out_path.open("w", encoding="utf-8") as f:
-            json.dump(self._manifest, f, indent=2, sort_keys=True)
+
+        serialized = json.dumps(self._manifest, indent=2, sort_keys=True) + "\n"
+        fd, tmp_name = tempfile.mkstemp(
+            prefix=".manifest-", suffix=".tmp", dir=str(out_path.parent)
+        )
+        try:
+            os.chmod(fd, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(serialized)
+            os.replace(tmp_name, out_path)
+        except BaseException:
+            if os.path.exists(tmp_name):
+                os.unlink(tmp_name)
+            raise
 
         return str(out_path)
 

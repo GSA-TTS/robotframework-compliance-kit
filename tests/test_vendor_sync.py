@@ -9,7 +9,17 @@ from gsa_compliance_robot.vendor_sync import (
     check_resources,
     main,
     sync_resources,
+    validate_immutable_ref,
 )
+
+
+def test_validate_immutable_ref_accepts_sha_and_tag_and_rejects_branches():
+    sha = "a" * 40
+    assert validate_immutable_ref(sha) == sha
+    assert validate_immutable_ref("v0.2.0") == "v0.2.0"
+    for bad in ("main", "master", "HEAD", "feat/branch", ""):
+        with pytest.raises(ValueError, match="40-character commit SHA"):
+            validate_immutable_ref(bad)
 
 
 def test_no_args_prints_help_and_returns_zero(capsys):
