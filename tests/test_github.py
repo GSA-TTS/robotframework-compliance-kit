@@ -28,7 +28,9 @@ def test_repo_url_normalizer():
         == "github.com/GSA/data-strategy"
     )
     assert (
-        n.normalize_repo_url("[github.com/gsa-tts/handbook](https://github.com/gsa-tts/handbook)")
+        n.normalize_repo_url(
+            "[github.com/gsa-tts/handbook](https://github.com/gsa-tts/handbook)"
+        )
         == "github.com/GSA-TTS/handbook"
     )
     assert n.normalize_repo_url("") == ""
@@ -84,12 +86,17 @@ def test_github_client_verbs_retry_and_repo_issues_client():
 
     with patch.object(gc.urllib.request, "urlopen", fake_urlopen):
         client = GitHubClient(token="t", retry=NO_RETRY)
-        assert client.get(f"{API_ROOT}/user") == {"login": "octocat"}
+        user_res = client.get(f"{API_ROOT}/user")
+        assert user_res == {"login": "octocat"}
         repo_client = RepoIssuesClient("GSA-TTS/gsa-pages", token="t")
-        assert len(repo_client.list_issues_with_labels(["atu"])) == 2
-        assert repo_client.create_comment(1, "hello") == {"id": 10}
-        assert repo_client.close_issue(1) == {"state": "closed"}
-        assert client.delete(f"{API_ROOT}/repos/x/y/collaborators/u") is None
+        issues_res = repo_client.list_issues_with_labels(["atu"])
+        assert len(issues_res) == 2
+        comment_res = repo_client.create_comment(1, "hello")
+        assert comment_res == {"id": 10}
+        close_res = repo_client.close_issue(1)
+        assert close_res == {"state": "closed"}
+        delete_res = client.delete(f"{API_ROOT}/repos/x/y/collaborators/u")
+        assert delete_res is None
 
     # Retry on 503 with Retry-After
     sleeps: list[float] = []
@@ -107,7 +114,8 @@ def test_github_client_verbs_retry_and_repo_issues_client():
             retry=RetryConfig(max_attempts=2, base=0.1, cap=5.0),
             sleep=sleeps.append,
         )
-        assert c2.get(f"{API_ROOT}/user") == {"ok": True}
+        retry_res = c2.get(f"{API_ROOT}/user")
+        assert retry_res == {"ok": True}
     assert sleeps == [1.0]
 
     # 404 raises GitHubClientError immediately

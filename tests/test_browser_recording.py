@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -13,7 +14,7 @@ from gsa_compliance_robot.browser_recording import (
 )
 
 
-def test_write_sanitized_events_removes_sensitive_fields(tmp_path):
+def test_write_sanitized_events_removes_sensitive_fields(tmp_path: Path):
     raw_events = [
         {
             "event_type": "change",
@@ -26,16 +27,16 @@ def test_write_sanitized_events_removes_sensitive_fields(tmp_path):
         }
     ]
     path = write_sanitized_events(json.dumps(raw_events), str(tmp_path))
-    data = json.loads(open(path, encoding="utf-8").read())
+    data = json.loads(Path(path).read_text(encoding="utf-8"))
     assert data["event_count"] == 1
     assert data["page_closed"] is False
     assert "value" not in data["events"][0]
     assert "cookies" not in data["events"][0]
 
 
-def test_closed_page_and_non_list_validation(tmp_path, monkeypatch):
+def test_closed_page_and_non_list_validation(tmp_path: Path, monkeypatch):
     closed_path = write_closed_page_recording(str(tmp_path))
-    data = json.loads(open(closed_path, encoding="utf-8").read())
+    data = json.loads(Path(closed_path).read_text(encoding="utf-8"))
     assert data["page_closed"] is True
     assert data["events"] == []
 

@@ -26,8 +26,8 @@ def test_help_command_returns_zero(capsys):
 
 def test_sync_and_check_roundtrip(tmp_path: Path, capsys):
     dest = tmp_path / "vendor"
-    rc = main(["sync", "--dest", str(dest), "--version", "0.2.0"])
-    assert rc == 0
+    rc_sync = main(["sync", "--dest", str(dest), "--version", "0.2.0"])
+    assert rc_sync == 0
     assert (dest / LOCKFILE_NAME).is_file()
     env_res = dest / "env.resource"
     assert env_res.is_file()
@@ -35,8 +35,12 @@ def test_sync_and_check_roundtrip(tmp_path: Path, capsys):
         "# VENDORED from gsa-compliance-robot v0.2.0 \u2014 do not edit\n"
     )
 
-    assert main(["check", "--dest", str(dest), "--version", "0.2.0"]) == 0
-    assert main(["sync", "--check", "--dest", str(dest), "--version", "0.2.0"]) == 0
+    rc_check = main(["check", "--dest", str(dest), "--version", "0.2.0"])
+    assert rc_check == 0
+    rc_sync_check = main(
+        ["sync", "--check", "--dest", str(dest), "--version", "0.2.0"]
+    )
+    assert rc_sync_check == 0
     captured = capsys.readouterr()
     assert "OK" in captured.out
 
@@ -47,10 +51,13 @@ def test_check_detects_tampered_missing_and_extra_files(tmp_path: Path, capsys):
 
     # Tamper with a resource file
     env_res = dest / "env.resource"
-    env_res.write_text(env_res.read_text(encoding="utf-8") + "# drift\n", encoding="utf-8")
+    env_res.write_text(
+        env_res.read_text(encoding="utf-8") + "# drift\n", encoding="utf-8"
+    )
     errors = check_resources(dest, version="0.2.0")
     assert any("Content/SHA-256 mismatch for env.resource" in e for e in errors)
-    assert main(["check", "--dest", str(dest)]) == 1
+    rc_tamper = main(["check", "--dest", str(dest)])
+    assert rc_tamper == 1
     captured = capsys.readouterr()
     assert "DRIFT" in captured.err
 
