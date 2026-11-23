@@ -280,6 +280,16 @@ def extract_keywords_from_file(path: Path) -> list[str]:
     return names
 
 
+_SUITE_DOCUMENTATION = (
+    "Documentation    Auto-generated coverage suite: exercises resource keywords "
+    "(no-op tolerant)"
+)
+_TEST_DOCUMENTATION = (
+    "    [Documentation]    Invoke each resource keyword with Run Keyword And Ignore "
+    "Error to record usage for coverage"
+)
+
+
 def render_coverage_suite(
     resources_dir: Path, cwd: Path | None = None
 ) -> tuple[str, int, int]:
@@ -304,8 +314,7 @@ def render_coverage_suite(
     unique = list(dict.fromkeys(keywords))
     lines = [
         "*** Settings ***",
-        "Documentation    Auto-generated coverage suite: exercises resource keywords "
-        "(no-op tolerant)",
+        _SUITE_DOCUMENTATION,
     ]
     lines += [f"Resource    {path}" for path in imported]
     lines += [
@@ -316,8 +325,7 @@ def render_coverage_suite(
         "Exercise Resource Keywords",
     ]
     lines += [
-        "    [Documentation]    Invoke each resource keyword with Run Keyword And Ignore "
-        "Error to record usage for coverage",
+        _TEST_DOCUMENTATION,
         "    [Timeout]    20 minutes",
     ]
     if unique:
