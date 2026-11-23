@@ -57,8 +57,10 @@ Get Cloud Gov Service Events
 
 Login To Cloud Gov CLI
     [Documentation]    Authenticate using `cf login` (requires the `cf` CLI on PATH).
-    [Arguments]    ${username}    ${password}
-    CloudGov.Login Via Cli    ${username}    ${password}
+    ...    Server certificates are verified. Set `${skip_ssl_validation}` to `${TRUE}` only for
+    ...    a private test environment; a warning is logged when it is used.
+    [Arguments]    ${username}    ${password}    ${skip_ssl_validation}=${FALSE}
+    CloudGov.Login Via Cli    ${username}    ${password}    ${skip_ssl_validation}
 
 Get Cloud Gov Organization GUID Via CLI
     [Documentation]    Return the GUID for a named organization via `cf org --guid`.
