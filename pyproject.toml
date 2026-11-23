@@ -48,8 +48,12 @@ allure = [
     "allure-robotframework>=2.13.5",
     "allure-python-commons>=2.13.5",
 ]
+coverage = [
+    "defusedxml>=0.7.1",
+]
 dev = [
     "pytest>=8.0",
+    "defusedxml>=0.7.1",
     "pytest-cov",
     "robotframework-robocop>=8.2,<10",
     "robotcode[analyze]==2.8.0",
@@ -58,6 +62,8 @@ dev = [
 
 [project.scripts]
 gsa-robot-vendor = "gsa_compliance_robot.vendor_sync:main"
+gsa-robot-keyword-coverage = "gsa_compliance_robot.keyword_coverage:main"
+gsa-robot-coverage-summary = "gsa_compliance_robot.coverage_summary:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/gsa_compliance_robot"]

@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+### Added
+
+- `gsa_compliance_robot.keyword_coverage` and the `gsa-robot-keyword-coverage` command (`check`, `generate-suite`, `find-python-libs`): static, offline Robot keyword-coverage helpers extracted from `GSA-TTS/gsa-pages` `scripts/testing/`. Heading parsing also accepts `*** Tasks ***` and singular headings.
+- `gsa_compliance_robot.coverage_summary` and the `gsa-robot-coverage-summary` command: Markdown summary of a Cobertura `coverage.xml`, parsed with `defusedxml` (new `coverage` extra).
+- Tests for both modules (kept at 92% overall coverage).
+
 ## [0.2.0] - 2026-11-20
 
 ### Added

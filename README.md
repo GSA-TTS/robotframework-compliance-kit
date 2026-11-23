@@ -46,6 +46,8 @@ implementation instead of re-authoring or forking it.
 | `gsa_compliance_robot.github` | Shared GitHub REST/GraphQL client + repository URL normalizer | gsa-pages `scripts/lib/github_client.py` + `RepoUrlNormalizer.py` |
 | `gsa_compliance_robot.cloudgov` | **Unified** cloud.gov API/CLI client (token, `cf` CLI auth) | Merged from M-26-14 `CloudGovAPI.resource`/`CloudGovCLI.resource`/`CloudGovHelpers.py` **and** gsa-pages `cloudgov_auth.resource`/`cloudgov_api.resource` |
 | `gsa_compliance_robot.cloudlogs` | AWS CloudWatch Insights / Azure Log Analytics / GCP Cloud Logging adapters behind one interface | M-26-14 `lib/aws_insights.py`, `azure_monitor.py`, `gcp_logging.py` |
+| `gsa_compliance_robot.keyword_coverage` | Static keyword-coverage tools: unused resource keywords, generated coverage suite, tests importing Python libraries (`gsa-robot-keyword-coverage`) | gsa-pages `scripts/testing/{check_resource_keyword_coverage,generate_keyword_coverage_suite,find_tests_with_python_libs}.py` |
+| `gsa_compliance_robot.coverage_summary` | Markdown summary of a Cobertura `coverage.xml` (`gsa-robot-coverage-summary`, needs the `coverage` extra) | gsa-pages `scripts/testing/coverage_summary.py` |
 
 Each Python module has a matching `.resource` file under
 `src/gsa_compliance_robot/resources/` exposing the same functionality as
