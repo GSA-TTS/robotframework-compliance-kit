@@ -39,6 +39,7 @@ cloud.gov API/CLI. Callers that need offline/unit-test behavior should mock
 from __future__ import annotations
 
 import json
+import logging
 import subprocess
 from typing import Any, Literal
 
@@ -213,11 +214,19 @@ class CloudGovClient:
     # ---- cf CLI backend -------------------------------------------------
 
     def login_via_cli(
-        self, username: str, password: str, skip_ssl_validation: bool = True
+        self, username: str, password: str, skip_ssl_validation: bool = False
     ) -> None:
-        """Authenticate using `cf login` (requires the `cf` CLI on PATH)."""
+        """Authenticate using `cf login` (requires the `cf` CLI on PATH).
+
+        Certificate verification is on by default. Pass ``skip_ssl_validation=True``
+        only for a private test environment; it is logged as a warning.
+        """
         cmd = ["cf", "login", "-a", self.api_url, "-u", username, "-p", password]
         if skip_ssl_validation:
+            logging.getLogger(__name__).warning(
+                "cf login is running with --skip-ssl-validation; the server "
+                "certificate is NOT verified"
+            )
             cmd.append("--skip-ssl-validation")
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
         if result.returncode != 0:

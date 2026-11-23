@@ -122,6 +122,27 @@ class TestCliBackend:
         mock_run.assert_called_once()
 
     @patch("subprocess.run")
+    def test_login_via_cli_verifies_tls_by_default(self, mock_run, caplog):
+        mock_run.return_value = MagicMock(returncode=0, stderr="")
+        client = CloudGovClient()
+        with caplog.at_level("WARNING"):
+            client.login_via_cli("user", "pass")
+        cmd = mock_run.call_args[0][0]
+        assert "--skip-ssl-validation" not in cmd
+        assert "skip-ssl-validation" not in caplog.text
+
+    @patch("subprocess.run")
+    def test_login_via_cli_skip_ssl_is_opt_in_and_warns(self, mock_run, caplog):
+        mock_run.return_value = MagicMock(returncode=0, stderr="")
+        client = CloudGovClient()
+        with caplog.at_level("WARNING"):
+            client.login_via_cli("user", "pass", skip_ssl_validation=True)
+        cmd = mock_run.call_args[0][0]
+        assert "--skip-ssl-validation" in cmd
+        assert "NOT verified" in caplog.text
+        assert "pass" not in caplog.text
+
+    @patch("subprocess.run")
     def test_login_via_cli_failure_raises(self, mock_run):
         mock_run.return_value = MagicMock(returncode=1, stderr="bad creds")
         client = CloudGovClient()

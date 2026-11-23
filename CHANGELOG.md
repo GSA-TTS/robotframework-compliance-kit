@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Security
+
+- **Breaking:** `CloudGovClient.login_via_cli` and the `Login To Cloud Gov CLI` keyword no longer pass `--skip-ssl-validation` to `cf login` by default; server certificates are now verified. Opt in with `skip_ssl_validation=True` (Python) or `${skip_ssl_validation}=${TRUE}` (Robot) for a private test environment; a warning is logged when used. Consumers that relied on the old default (gsa-pages, M-26-14) need to pass the opt-in explicitly, or, preferably, fix the environment's certificate trust. Closes #27.
+
 ### Added
 
 - `gsa_compliance_robot.keyword_coverage` and the `gsa-robot-keyword-coverage` command (`check`, `generate-suite`, `find-python-libs`): static, offline Robot keyword-coverage helpers extracted from `GSA-TTS/gsa-pages` `scripts/testing/`. Heading parsing also accepts `*** Tasks ***` and singular headings.
